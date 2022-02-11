@@ -42,6 +42,9 @@ int main() {
   //As each measurement is independent of each other a linear vector can
   //be used to test instead of a 3D space
   Battery MyBattery(0.0, 45.0, 20.0, 80.0, 0.8);
-  assert(MyBattery.batteryIsOk(25, 70, 0.7) == true);
+  for(float Temperature = 0; Temperature < 100; Temperature+=10){
+     assert(MyBattery.batteryIsOk(Temperature, 70, 0.7) == (0.0 <= Temperature && Temperature <= 45.0));
+  }
+
   assert(MyBattery.batteryIsOk(50, 85, 0.0) == false);
 }
