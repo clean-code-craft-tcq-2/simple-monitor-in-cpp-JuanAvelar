@@ -13,13 +13,19 @@ private:
   const float _MinSoC, _MaxSoC;
   const float _MaxChargeRate;
   bool IsTemperatureDanger(float temp){
-    return (temp < _MinTemp || temp > _MaxTemp);
+    bool ret = (temp < _MinTemp || temp > _MaxTemp);
+    if(ret) std::cerr << "Temperature out of range!\n";
+    return ret;
   }
   bool IsStateOfChargeDanger(float soc){
-    return (soc < _MinSoC || soc > _MaxSoC);
+    bool ret = (soc < _MinSoC || soc > _MaxSoC);
+    if(ret) std::cerr << "State of Charge out of range!\n";
+    return ret;
   }
   bool IsChargeRateDanger(float chargeRate){
-    return (chargeRate > _MaxChargeRate);
+    bool ret = (chargeRate > _MaxChargeRate);
+    if(ret) std::cerr << "Charge Rate out of range!\n";
+    return ret;
   }
 public:
   Battery(float MinTemp, float MaxTemp, float MinSoC, float MaxSoC, float MaxChargeRate):
@@ -29,11 +35,6 @@ public:
 
 bool Battery::batteryIsOk(float temperature, float soc, float chargeRate) {
   unsigned char Error = (IsTemperatureDanger(temperature) | (IsStateOfChargeDanger(soc) << 1) | (IsChargeRateDanger(chargeRate) << 2));
-  if(Error){
-    if(Error & Battery::TempError){std::cerr << "Temperature out of range!\n";}
-    if(Error & Battery::SoCError){std::cerr << "State of Charge out of range!\n";}
-    if(Error & Battery::ChargeRateError){std::cerr << "Charge Rate out of range!\n";}
-  }
   return !Error;
 }
 
