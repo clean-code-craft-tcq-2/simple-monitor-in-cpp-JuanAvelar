@@ -45,6 +45,10 @@ int main() {
   for(float Temperature = 0; Temperature < 100; Temperature+=10){
      assert(MyBattery.batteryIsOk(Temperature, 70, 0.7) == (0.0 <= Temperature && Temperature <= 45.0));
   }
-
-  assert(MyBattery.batteryIsOk(50, 85, 0.0) == false);
+  for(float SoC = 0; SoC < 100; SoC+=10){
+     assert(MyBattery.batteryIsOk(40.0, SoC, 0.7) == (20.0 <= SoC && SoC <= 80.0));
+  }
+  for(float ChargeRate = 0; ChargeRate < 1.0; ChargeRate+=0.1){
+     assert(MyBattery.batteryIsOk(40.0, 70, ChargeRate) == (ChargeRate <= 0.8));
+  }
 }
