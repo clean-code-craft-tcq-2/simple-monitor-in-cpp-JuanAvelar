@@ -33,7 +33,6 @@ bool Battery::batteryIsOk(float temperature, float soc, float chargeRate) {
     if(Error & Battery::TempError){std::cerr << "Temperature out of range!\n";}
     if(Error & Battery::SoCError){std::cerr << "State of Charge out of range!\n";}
     if(Error & Battery::ChargeRateError){std::cerr << "Charge Rate out of range!\n";}
-    if(Error & Battery::NoError){std::cout << "Everything OK\n";}
   }
   return !Error;
 }
