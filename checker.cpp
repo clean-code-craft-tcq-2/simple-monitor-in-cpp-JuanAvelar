@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <iostream>
-
+#define TEMPSCALARTEST 1.0
+#define SOCSCALARTEST 1.0
+#define CHRASCALARTEST 0.01
 class Battery{
 private:
   enum ErrorCode{
@@ -42,13 +44,10 @@ int main() {
   //As each measurement is independent of each other a linear vector can
   //be used to test instead of a 3D space
   Battery MyBattery(0.0, 45.0, 20.0, 80.0, 0.8);
-  for(float Temperature = 0; Temperature < 100; Temperature+=10){
-     assert(MyBattery.batteryIsOk(Temperature, 70, 0.7) == !MyBattery.IsTemperatureDanger(Temperature));
-  }
-  for(float SoC = 0; SoC < 100; SoC+=10){
-     assert(MyBattery.batteryIsOk(40.0, SoC, 0.7) == !MyBattery.IsStateOfChargeDanger(SoC));
-  }
-  for(float ChargeRate = 0; ChargeRate < 1.0; ChargeRate+=0.1){
-     assert(MyBattery.batteryIsOk(40.0, 70, ChargeRate) == !MyBattery.IsChargeRateDanger(ChargeRate));
+  for(float BaseIndex = 0; BaseIndex < 100; BaseIndex+=10){
+    std::cout << "\tTest index : " << BaseIndex << std::endl;
+     assert(MyBattery.batteryIsOk(BaseIndex*TEMPSCALARTEST, 70, 0.7) == !MyBattery.IsTemperatureDanger(BaseIndex*TEMPSCALARTEST));
+     assert(MyBattery.batteryIsOk(40.0, BaseIndex*SOCSCALARTEST, 0.7) == !MyBattery.IsStateOfChargeDanger(BaseIndex*SOCSCALARTEST));
+     assert(MyBattery.batteryIsOk(40.0, 70, BaseIndex*CHRASCALARTEST) == !MyBattery.IsChargeRateDanger(BaseIndex*CHRASCALARTEST));
   }
 }
