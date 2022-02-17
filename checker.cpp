@@ -1,53 +1,52 @@
 #include <assert.h>
 #include <iostream>
+#include <vector>
 #define TEMPSCALARTEST 1.0
 #define SOCSCALARTEST 1.0
 #define CHRASCALARTEST 0.01
+class Data_Limit{
+private:
+  const float _Minimum_limit, _Maximum_limit;
+  std::string _WarningMessage;
+public:
+  Data_Limit(float min, float max, std::string warning): _Minimum_limit(min), _Maximum_limit(max), _WarningMessage(warning){};
+  bool IsLimitDanger(float temp){
+    bool ret = (temp < _Minimum_limit || temp > _Maximum_limit);
+    if(ret) std::cerr << "WARNING: " << _WarningMessage << "\n";
+    return ret;
+  }
+};
 class Battery{
 private:
-  enum ErrorCode{
-    NoError = 0,
-    TempError = 0x1,
-    SoCError = 0x2,
-    ChargeRateError = 0x4
-  };
-  const float _MinTemp, _MaxTemp;
-  const float _MinSoC, _MaxSoC;
-  const float _MaxChargeRate;
+  std::vector<Data_Limit> _Data_Ranges;
 public:
-  bool IsTemperatureDanger(float temp){
-    bool ret = (temp < _MinTemp || temp > _MaxTemp);
-    if(ret) std::cerr << "Temperature out of range!\n";
-    return ret;
-  }
-  bool IsStateOfChargeDanger(float soc){
-    bool ret = (soc < _MinSoC || soc > _MaxSoC);
-    if(ret) std::cerr << "State of Charge out of range!\n";
-    return ret;
-  }
-  bool IsChargeRateDanger(float chargeRate){
-    bool ret = (chargeRate > _MaxChargeRate);
-    if(ret) std::cerr << "Charge Rate out of range!\n";
-    return ret;
-  }
-  Battery(float MinTemp, float MaxTemp, float MinSoC, float MaxSoC, float MaxChargeRate):
-          _MinTemp(MinTemp), _MaxTemp(MaxTemp), _MinSoC(MinSoC), _MaxSoC(MaxSoC), _MaxChargeRate(MaxChargeRate){};
-  bool batteryIsOk(float temperature, float soc, float chargeRate);
+  Battery(std::vector<Data_Limit> limits): _Data_Ranges(limits){};
+  bool batteryIsOk(std::vector<float> realTimeSensorData);
 };
-
-bool Battery::batteryIsOk(float temperature, float soc, float chargeRate) {
-  unsigned char Error = (IsTemperatureDanger(temperature) | (IsStateOfChargeDanger(soc) << 1) | (IsChargeRateDanger(chargeRate) << 2));
-  return !Error;
+bool Battery::batteryIsOk(std::vector<float> realTimeSensorData) {
+  unsigned int left_shift = 0, Error = 0, next_data = 0;
+  if(realTimeSensorData.size()!=_Data_Ranges.size())std::cerr << "Error: Test Data is not correctly mapped\n";
+  for(auto&& DATA : _Data_Ranges){
+    Error |= (DATA.IsLimitDanger(realTimeSensorData.at(next_data++)) << left_shift++);//By performing a left shift a unique code of the error/s is generated
+  }
+  return !Error;//returning true means OK
 }
-
 int main() {
   //As each measurement is independent of each other a linear vector can
-  //be used to test instead of a 3D space
-  Battery MyBattery(0.0, 45.0, 20.0, 80.0, 0.8);
+  //be used to test this instead of a 3D space
+  std::vector<Data_Limit> Specification;
+  Specification.push_back(Data_Limit(00.0,45.0,"Temperature out of range!"));
+  Specification.push_back(Data_Limit(20.0,80.0,"State of Charge out of range!"));
+  Specification.push_back(Data_Limit(0.00,0.80,"Charge Rate out of range!"));
+  Battery MyBattery(Specification);
   for(float BaseIndex = 0; BaseIndex < 100; BaseIndex+=10){
+    std::vector<float> SensorMapTest;
     std::cout << "\tTest index : " << BaseIndex << std::endl;
-     assert(MyBattery.batteryIsOk(BaseIndex*TEMPSCALARTEST, 70, 0.7) == !MyBattery.IsTemperatureDanger(BaseIndex*TEMPSCALARTEST));
-     assert(MyBattery.batteryIsOk(40.0, BaseIndex*SOCSCALARTEST, 0.7) == !MyBattery.IsStateOfChargeDanger(BaseIndex*SOCSCALARTEST));
-     assert(MyBattery.batteryIsOk(40.0, 70, BaseIndex*CHRASCALARTEST) == !MyBattery.IsChargeRateDanger(BaseIndex*CHRASCALARTEST));
+    SensorMapTest = {BaseIndex*(float)TEMPSCALARTEST, 70, 0.7};
+    assert(MyBattery.batteryIsOk(SensorMapTest) == !Specification.at(1).IsLimitDanger(BaseIndex*TEMPSCALARTEST));
+    SensorMapTest = {40.0, BaseIndex*(float)SOCSCALARTEST, 0.7};
+    assert(MyBattery.batteryIsOk(SensorMapTest) == !Specification.at(2).IsLimitDanger(BaseIndex*SOCSCALARTEST));
+    SensorMapTest = {40.0, 70, BaseIndex*(float)CHRASCALARTEST};
+    assert(MyBattery.batteryIsOk(SensorMapTest) == !Specification.at(3).IsLimitDanger(BaseIndex*CHRASCALARTEST));
   }
 }
