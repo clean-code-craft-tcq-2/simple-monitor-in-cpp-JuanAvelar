@@ -70,14 +70,14 @@ bool Battery::batteryIsOk(std::vector<float> realTimeSensorData) {
   }
   return !Error;//returning true means OK
 }
-int main() {
+int main(void) {
   //As each measurement is independent of each other a linear vector can
   //be used to test this instead of a 3D space
   std::vector<Data_Limit> Specification;
   Specification.push_back(Data_Limit(00.0,45.0,"Temperature"));
   Specification.push_back(Data_Limit(20.0,80.0,"State of Charge", EARLYWARNINGSON));//by default early warnings are turned OFF unless specified by parameter
   Specification.push_back(Data_Limit(0.00,0.80,"Charge Rate"));
-  Battery MyBattery(Specification, Spanish);
+  Battery MyBattery(Specification, Spanish);//change here Language or nothing to leave english
   for(float BaseIndex = 29.01; BaseIndex < 100; BaseIndex+=10){
     std::vector<float> SensorMapTest;
     std::cout << "\tTest index : " << BaseIndex << std::endl;
@@ -88,4 +88,5 @@ int main() {
     SensorMapTest = {40.0, 70, BaseIndex*(float)CHRASCALARTEST};
     assert(MyBattery.batteryIsOk(SensorMapTest) == !Specification.at(2).IsLimitDanger(BaseIndex*CHRASCALARTEST));
   }
+  return 0;
 }
