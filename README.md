@@ -61,3 +61,4 @@ Shorten the Semantic distance
 ##Extensions Added
 
 - Early Warnings with fixed 5% tolerance
+- Language selection added
