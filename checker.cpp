@@ -47,10 +47,10 @@ private:
   }
 public:
   Data_Limit(float min, float max, std::string warning, bool early_warning = false): _Minimum_limit(min), _Maximum_limit(max), _WarningMessage(warning), _EarlyWarningON(early_warning){};
-  bool IsLimitDanger(float reading, Language lang = English){
+  bool IsLimitDanger(float reading, Language lang = English, bool mute = false){
     bool ret = (reading < _Minimum_limit || reading > _Maximum_limit);
-    if(ret) PrintLimitWarning(lang);
-    if(!ret & EarlyWarning(reading, 0.05) & _EarlyWarningON) PrintApproachingLimit(lang);
+    if(ret & !mute) PrintLimitWarning(lang);
+    if(!ret & EarlyWarning(reading, 0.05) & _EarlyWarningON & !mute) PrintApproachingLimit(lang);
     return ret;
   }
 };
@@ -78,15 +78,15 @@ int main(void) {
   Specification.push_back(Data_Limit(20.0,80.0,"State of Charge", EARLYWARNINGSON));//by default early warnings are turned OFF unless specified by parameter
   Specification.push_back(Data_Limit(0.00,0.80,"Charge Rate"));
   Battery MyBattery(Specification, Spanish);//change here Language or nothing to leave english
-  for(float BaseIndex = 29.01; BaseIndex < 100; BaseIndex+=10){
+  for(float BaseIndex = -0.99; BaseIndex < 100; BaseIndex+=1){
     std::vector<float> SensorMapTest;
     std::cout << "\tTest index : " << BaseIndex << std::endl;
     SensorMapTest = {BaseIndex*(float)TEMPSCALARTEST, 70, 0.7};
-    assert(MyBattery.batteryIsOk(SensorMapTest) == !Specification.at(0).IsLimitDanger(BaseIndex*TEMPSCALARTEST));
+    assert(MyBattery.batteryIsOk(SensorMapTest) == !Specification.at(0).IsLimitDanger(BaseIndex*TEMPSCALARTEST, English, true));
     SensorMapTest = {40.0, BaseIndex*(float)SOCSCALARTEST, 0.7};
-    assert(MyBattery.batteryIsOk(SensorMapTest) == !Specification.at(1).IsLimitDanger(BaseIndex*SOCSCALARTEST));
+    assert(MyBattery.batteryIsOk(SensorMapTest) == !Specification.at(1).IsLimitDanger(BaseIndex*SOCSCALARTEST , English, true));
     SensorMapTest = {40.0, 70, BaseIndex*(float)CHRASCALARTEST};
-    assert(MyBattery.batteryIsOk(SensorMapTest) == !Specification.at(2).IsLimitDanger(BaseIndex*CHRASCALARTEST));
+    assert(MyBattery.batteryIsOk(SensorMapTest) == !Specification.at(2).IsLimitDanger(BaseIndex*CHRASCALARTEST, English, true));
   }
   return 0;
 }
