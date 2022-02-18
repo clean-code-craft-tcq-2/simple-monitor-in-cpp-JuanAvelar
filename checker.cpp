@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <iostream>
 #include <vector>
+#include <array>
 #define TEMPSCALARTEST 1.0
 #define SOCSCALARTEST 1.0
 #define CHRASCALARTEST 0.01
@@ -8,38 +9,28 @@
 enum Language{
   English,
   German,
-  Spanish
+  Spanish,
+  NumberOfLaguagesIncluded
 };
+std::vector<std::array<std::string,2>> WarnTextLimitPassed =
+                                      {{"WARNING: ", " out of range!\n"},
+                                       {"ACHTUNG: ", " außer Reichweite!\n"},
+                                       {"ADVERTENCIA: ", " fuera de rango!\n"}};
+std::vector<std::array<std::string,2>> WarnTextLimitApproached =
+                                      {{"IMPORTANT INFO: ", " approaching Limit\n"},
+                                       {"WICHTIGE INFO: ", " Grenze nähern\n"},
+                                       {"INFORMACION IMPORTANTE: ", " cerca del limite\n"}};
+
 class Data_Limit{
 private:
   const float _Minimum_limit, _Maximum_limit;
   std::string _WarningMessage;
   bool _EarlyWarningON;
   void PrintLimitWarning(Language lang = English){
-    switch (lang) {
-      case English:
-        std::cerr << "WARNING: " << _WarningMessage << " out of range!\n";
-        break;
-      case German:
-        std::cerr << "ACHTUNG: " << _WarningMessage << " außer Reichweite!\n";
-        break;
-      case Spanish:
-        std::cerr << "ADVERTENCIA: " << _WarningMessage << " fuera de rango!\n";
-        break;
-    }
+    std::cerr << WarnTextLimitPassed.at(lang).at(0) << _WarningMessage << WarnTextLimitPassed.at(lang).at(1);
   }
   void PrintApproachingLimit(Language lang = English){
-    switch (lang) {
-      case English:
-        std::cout << "IMPORTANT INFO: " << _WarningMessage << " approaching Limit\n";
-        break;
-      case German:
-        std::cout << "WICHTIGE INFO: " << _WarningMessage << " Grenze nähern\n";
-        break;
-      case Spanish:
-        std::cout << "INFORMACION IMPORTANTE: " << _WarningMessage << " cerca del limite\n";
-        break;
-    }
+    std::cout << WarnTextLimitApproached.at(lang).at(0) << _WarningMessage << WarnTextLimitApproached.at(lang).at(1);
   }
   bool EarlyWarning(float reading, float percentTolerance){
     return (  ((reading < (_Minimum_limit + _Maximum_limit*percentTolerance)) &(reading >=_Minimum_limit))
@@ -48,7 +39,7 @@ private:
 public:
   Data_Limit(float min, float max, std::string warning, bool early_warning = false): _Minimum_limit(min), _Maximum_limit(max), _WarningMessage(warning), _EarlyWarningON(early_warning){};
   bool IsLimitDanger(float reading, Language lang = English, bool mute = false){
-    bool ret = (reading < _Minimum_limit || reading > _Maximum_limit);
+    bool ret = ((reading < _Minimum_limit) | (reading > _Maximum_limit));
     if(ret & !mute) PrintLimitWarning(lang);
     if(!ret & EarlyWarning(reading, 0.05) & _EarlyWarningON & !mute) PrintApproachingLimit(lang);
     return ret;
@@ -58,15 +49,19 @@ class Battery{
 private:
   std::vector<Data_Limit> _Data_Ranges;
   Language _language;
+  void checkDataIntegrity(std::vector<float> realTimeSensorData){
+    if(realTimeSensorData.size()!=_Data_Ranges.size())std::cerr << "Error: Test Data is not correctly mapped\n";
+  }
 public:
   Battery(std::vector<Data_Limit> limits, Language lang = English): _Data_Ranges(limits), _language(lang){};
   bool batteryIsOk(std::vector<float> realTimeSensorData);
 };
 bool Battery::batteryIsOk(std::vector<float> realTimeSensorData) {
   unsigned int left_shift = 0, Error = 0, next_data = 0;
-  if(realTimeSensorData.size()!=_Data_Ranges.size())std::cerr << "Error: Test Data is not correctly mapped\n";
+  checkDataIntegrity(realTimeSensorData);
   for(auto&& DATA : _Data_Ranges){
-    Error |= (DATA.IsLimitDanger(realTimeSensorData.at(next_data++), _language) << left_shift++);//By performing a left shift a unique code of the error/s is generated
+    //By performing a left shift a unique code of the error/s is generated
+    Error |= (DATA.IsLimitDanger(realTimeSensorData.at(next_data++), _language) << left_shift++);
   }
   return !Error;//returning true means OK
 }
